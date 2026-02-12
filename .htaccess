@@ -1,0 +1,199 @@
+# Configuration Apache pour le Portfolio
+
+# Activer le réécriture d'URL
+RewriteEngine On
+
+# Configuration de sécurité
+# Protéger les fichiers sensibles
+<Files ~ "^\.">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<FilesMatch "^(config|functions)\.php$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "\.(log|txt)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protéger les dossiers sensibles
+<IfModule mod_authz_core.c>
+    <Directory ~ "^/(config|includes|cache|logs)">
+        Require all denied
+    </Directory>
+</IfModule>
+
+# Headers de sécurité
+<IfModule mod_headers.c>
+    # Protection contre XSS
+    Header set X-XSS-Protection "1; mode=block"
+    
+    # Protection contre le clickjacking
+    Header set X-Frame-Options "SAMEORIGIN"
+    
+    # Politique de contenu
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self';"
+    
+    # Forcer HTTPS en production
+    # Header set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    
+    # Types de contenu
+    Header set Content-Type "text/html; charset=UTF-8"
+    
+    # Cache control pour les assets statiques
+    <FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    
+    # Cache control pour les fichiers HTML
+    <FilesMatch "\.(html|php)$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>
+
+# Compression GZIP
+<IfModule mod_deflate.c>
+    # Compresser les fichiers textes
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/xml
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml
+    AddOutputFilterByType DEFLATE application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/x-javascript
+    AddOutputFilterByType DEFLATE application/json
+</IfModule>
+
+# Configuration PHP
+<IfModule mod_php7.c>
+    # Désactiver l'affichage des erreurs en production
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log logs/errors.log
+    
+    # Limites de mémoire et d'upload
+    php_value memory_limit 128M
+    php_value upload_max_filesize 5M
+    php_value post_max_size 6M
+    
+    # Session sécurisée
+    php_flag session.cookie_httponly On
+    php_flag session.cookie_secure Off
+    php_flag session.use_only_cookies On
+</IfModule>
+
+<IfModule mod_php8.c>
+    # Désactiver l'affichage des erreurs en production
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log logs/errors.log
+    
+    # Limites de mémoire et d'upload
+    php_value memory_limit 128M
+    php_value upload_max_filesize 5M
+    php_value post_max_size 6M
+    
+    # Session sécurisée
+    php_flag session.cookie_httponly On
+    php_flag session.cookie_secure Off
+    php_flag session.use_only_cookies On
+</IfModule>
+
+# Pages d'erreur personnalisées
+ErrorDocument 404 /index.php
+ErrorDocument 403 /index.php
+ErrorDocument 500 /index.php
+
+# Réécriture d'URL pour les routes propres
+# Rediriger toutes les requêtes vers index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Forcer le trailing slash
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} !/$
+RewriteCond %{REQUEST_URI} !\.[^./]+$
+RewriteRule ^(.*)$ /$1/ [R=301,L]
+
+# Redirection www vers non-www
+RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+# Redirection HTTP vers HTTPS (décommenter en production)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# Types MIME pour les fichiers modernes
+<IfModule mod_mime.c>
+    # WebP
+    AddType image/webp .webp
+    
+    # WOFF2
+    AddType font/woff2 .woff2
+    
+    # SVG
+    AddType image/svg+xml .svg .svgz
+    
+    # JSON
+    AddType application/json .json
+    
+    # Manifest
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
+# Options de sécurité supplémentaires
+<IfModule mod_expires.c>
+    # Activer Expire Headers
+    ExpiresActive On
+    
+    # Assets statiques
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/ico "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    
+    # Documents HTML
+    ExpiresByType text/html "access plus 0 seconds"
+    
+    # Fichiers PHP
+    ExpiresByType application/x-httpd-php "access plus 0 seconds"
+</IfModule>
+
+# Désactiver la signature du serveur
+ServerSignature Off
+ServerTokens Prod
+
+# Protéger contre les attaques communes
+<IfModule mod_security2.c>
+    SecRuleEngine On
+    SecRequestBodyAccess On
+    SecResponseBodyAccess Off
+    SecResponseBodyMimeType text/plain text/html text/xml application/octet-stream
+    SecDataDir "logs/"
+</IfModule>
+
+# Limiter la taille des requêtes
+LimitRequestBody 10485760
+
+# Timeout de connexion
+Timeout 30
+
+# KeepAlive
+KeepAlive On
+MaxKeepAliveRequests 100
+KeepAliveTimeout 5
